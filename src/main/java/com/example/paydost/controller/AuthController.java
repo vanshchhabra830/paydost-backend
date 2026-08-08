@@ -4,6 +4,7 @@ import com.example.paydost.dto.AuthResponseDto;
 import com.example.paydost.dto.LoginRequestDto;
 import com.example.paydost.dto.RegisterRequestDto;
 import com.example.paydost.security.JwtUtil;
+import com.example.paydost.service.RateLimitingService;
 import com.example.paydost.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final RateLimitingService rateLimitingService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto request) {
@@ -31,6 +33,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
+        // Check rate limit BEFORE attempting authentication
+        rateLimitingService.checkRateLimit(request.getEmail());
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -39,8 +44,13 @@ public class AuthController {
                     )
             );
         } catch (BadCredentialsException ex) {
+            // Record failed attempt in Redis, then re-throw
+            rateLimitingService.recordFailedAttempt(request.getEmail());
             throw new BadCredentialsException("Invalid email or password");
         }
+
+        // Login succeeded — reset the rate limit counter
+        rateLimitingService.resetAttempts(request.getEmail());
 
         String token = jwtUtil.generateToken(request.getEmail());
 
