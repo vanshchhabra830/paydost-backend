@@ -7,11 +7,11 @@ services:
       - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/paydost_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - DB_USERNAME=root
-      - DB_PASSWORD=root_password
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=c2VjdXJlLXJhbmRvbS1rZXktZm9yLXBheWRvc3QtYXBwLWNoYW5nZS1pbi1wcm9k
+      - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://localhost:3000
     depends_on:
       mysql:
@@ -26,7 +26,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=paydost_db
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
